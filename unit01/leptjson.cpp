@@ -1,45 +1,108 @@
-// 养成好习惯
-//_H__为结尾后缀，如果项目很大，这命名格式为 项目名称_目录_文件名称_H__
-#ifndef LEPTJSON_H__
-#define LEPTJSON_H__
+#include "leptjson.h"
 
-// 枚举数据类型
-enum lept_type
+#include <assert.h> //assert()
+#include <stdlib.h> //NULL
+#define EXPECT(c, ch)             \
+    do                            \
+    {                             \
+        assert(*c->json == (ch)); \
+        c->json++;                \
+    } while (0)
+namespace leptjson
 {
-    LEPT_NULL,
-    LEPT_FALSE,
-    LEPT_TRUE,
-    LEPT_NUMBER,
-    LEPT_STRING,
-    LEPT_ARRAY,
-    LEPT_OBJECT
-};
+    struct lept_context
+    {
+        const char *json;
+    };
 
-struct lept_value
-{
-    lept_type type;
-};
+    void letp_parse_whitespace(lept_context *c)
+    {
+        const char *p = c->json;
+        while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r')
+        {
+            ++p;
+        }
+        c->json = p;
+    }
 
-// 返回值类型
-enum
-{
-    LEPT_PARSE_OK = 0,
-    LEPT_PARSE_EXPECT_VALUE,
-    LEPT_PARSE_INVALID_VALUE,
-    LEPT_PARSE_ROOT_NOT_SINGULAR
-};
+    int lept_parse_null(lept_context *c, lept_value *v)
+    {
+        EXPECT(c, 'n');
+        if (c->json[0] != 'u' || c->json[1] != 'l' || c->json[2] != 'l')
+        {
+            return LEPT_PARSE_INVALID_VALUE;
+        }
+        c->json += 3;
+        v->type = LEPT_NULL;
+        return LEPT_PARSE_OK;
+    }
 
-class LeptJson
-{
-private:
-    /* data */
-public:
-    LeptJson(/* args */);
-    ~LeptJson();
+    int lept_parse_true(lept_context *c, lept_value *v)
+    {
+        EXPECT(c, 't');
+        if (c->json[0] != 'r' || c->json[1] != 'u' || c->json[2] != 'e')
+        {
+            return LEPT_PARSE_INVALID_VALUE;
+        }
+        c->json += 3;
+        v->type = LEPT_TRUE;
+        return LEPT_PARSE_OK;
+    }
 
-    static int lept_parse(lept_value *v, const char *json);
+    int lept_parse_false(lept_context *c, lept_value *v)
+    {
+        EXPECT(c, 'f');
+        if (c->json[0] != 'a' || c->json[1] != 'l' || c->json[2] != 's'|| c->json[3] != 'e')
+        {
+            return LEPT_PARSE_INVALID_VALUE;
+        }
+        c->json += 4;
+        v->type = LEPT_FALSE;
+        return LEPT_PARSE_OK;
+    }
 
-    static lept_type lept_get_type(const lept_value *v);
-};
+    int lept_parse_value(lept_context *c, lept_value *v)
+    {
+        switch (*c->json)
+        {
+        case 'n':
+            return lept_parse_null(c, v);
+        case 't':
+            return lept_parse_true(c, v);
+        case 'f':
+            return lept_parse_false(c,v);
+        case '\0':
+            return LEPT_PARSE_EXPECT_VALUE;
+        default:
+            return LEPT_PARSE_INVALID_VALUE;
+        }
+    }
 
-#endif // LEPTJSON_H__
+    // json-text =  ws value ws  由三部分组成
+    int lept_parse(lept_value *v, const char *json)
+    {
+        lept_context c;
+        int ret;
+        assert(v != NULL);
+        c.json = json;
+        v->type = LEPT_NULL;
+        // 处理第一部分
+        letp_parse_whitespace(&c);
+        ret = lept_parse_value(&c, v); // 处理第二部分
+        if (ret == LEPT_PARSE_OK)
+        {
+            letp_parse_whitespace(&c);
+            if (*c.json != '\0')
+            {
+                ret = LEPT_PARSE_ROOT_NOT_SINGULAR;
+            }
+        }
+        return ret;
+    }
+
+    lept_type lept_get_type(const lept_value *v)
+    {
+        assert(v != NULL);
+        return v->type;
+    }
+}
