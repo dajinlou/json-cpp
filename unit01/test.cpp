@@ -77,6 +77,7 @@ void test_parse_false()
     EXPECT_EQ_INT(leptjson::LEPT_FALSE, leptjson::lept_get_type(&v));
 }
 
+
 void test_parse()
 {
     test_parse_null();

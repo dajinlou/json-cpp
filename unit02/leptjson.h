@@ -8,17 +8,18 @@ namespace leptjson
     // 枚举数据类型
     enum lept_type
     {
-        LEPT_NULL,
-        LEPT_FALSE,
-        LEPT_TRUE,
-        LEPT_NUMBER,
-        LEPT_STRING,
-        LEPT_ARRAY,
-        LEPT_OBJECT
+        LEPT_NULL,  //0
+        LEPT_FALSE, //1
+        LEPT_TRUE,  //2
+        LEPT_NUMBER,//3
+        LEPT_STRING,//4
+        LEPT_ARRAY, //5
+        LEPT_OBJECT //6
     };
 
     struct lept_value
     {
+        double n;
         lept_type type;
     };
 
@@ -28,12 +29,15 @@ namespace leptjson
         LEPT_PARSE_OK = 0,
         LEPT_PARSE_EXPECT_VALUE,      //若一个 JSON 只含有空白
         LEPT_PARSE_INVALID_VALUE,     //若值不是那三种字面值
-        LEPT_PARSE_ROOT_NOT_SINGULAR  //若一个值之后，在空白之后还有其他字符
+        LEPT_PARSE_ROOT_NOT_SINGULAR,  //若一个值之后，在空白之后还有其他字符
+        LEPT_PARSE_NUMBER_TOO_BIG       //数值太大
     };
 
     int lept_parse(lept_value *v, const char *json);
 
     lept_type lept_get_type(const lept_value *v);
+
+    double lept_get_number(const lept_value* v);
 
 } // namespace leptjson
 #endif // LEPTJSON_H__

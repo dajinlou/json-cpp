@@ -1,5 +1,5 @@
 #include "leptjson.h"
-
+#include <iostream>
 #include <assert.h> //assert()
 #include <stdlib.h> //NULL
 #define EXPECT(c, ch)             \
@@ -52,7 +52,7 @@ namespace leptjson
     int lept_parse_false(lept_context *c, lept_value *v)
     {
         EXPECT(c, 'f');
-        if (c->json[0] != 'a' || c->json[1] != 'l' || c->json[2] != 's'|| c->json[3] != 'e')
+        if (c->json[0] != 'a' || c->json[1] != 'l' || c->json[2] != 's' || c->json[3] != 'e')
         {
             return LEPT_PARSE_INVALID_VALUE;
         }
@@ -60,7 +60,18 @@ namespace leptjson
         v->type = LEPT_FALSE;
         return LEPT_PARSE_OK;
     }
-
+    int lept_parse_number(lept_context *c, lept_value *v)
+    {
+        char* end;
+        //TODO validate number 用于将字符串转换为双精度浮点数  strtod会在转换结束后设置end指向的指针，指向str中第一个未被转换的字符。
+        v->n = strtod(c->json,&end); 
+        if(c->json == end){
+            return LEPT_PARSE_INVALID_VALUE;
+        }
+        c->json = end;
+        v->type = LEPT_NUMBER;
+        return LEPT_PARSE_OK;
+    }
     int lept_parse_value(lept_context *c, lept_value *v)
     {
         switch (*c->json)
@@ -70,11 +81,11 @@ namespace leptjson
         case 't':
             return lept_parse_true(c, v);
         case 'f':
-            return lept_parse_false(c,v);
+            return lept_parse_false(c, v);
         case '\0':
             return LEPT_PARSE_EXPECT_VALUE;
         default:
-            return LEPT_PARSE_INVALID_VALUE;
+            return lept_parse_number(c, v);
         }
     }
 
@@ -104,5 +115,12 @@ namespace leptjson
     {
         assert(v != NULL);
         return v->type;
+    }
+
+    double lept_get_number(const lept_value *v)
+    {
+        // std::cout <<"lept_type: "<< v->type << std::endl;
+        assert(v != NULL && v->type == LEPT_NUMBER);
+        return v->n;
     }
 }
